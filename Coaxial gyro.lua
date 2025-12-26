@@ -200,7 +200,7 @@ function onTick()
 
 	-- Position hold
 	local controlsNearZero=thresholdGate(yawLR,-0.1,0.1) and thresholdGate(pitchWS,-0.1,0.1) and thresholdGate(rollAD,-0.1,0.1) and collectiveUD<0.1
-	local chargeCapacitor=(controlsNearZero and not autopilotEnabled) or (not (distance<100) and autopilotEnabled)
+	local chargeCapacitor=(controlsNearZero and not autopilotEnabled) or (distance<=100 and autopilotEnabled)
 	local capacitor=capacitor(chargeCapacitor,120,1)
 
 	local posHoldPitchPIDActive=pitchSRlatch(not thresholdGate(directionalSpeedFront,-3,3),posHoldPitchPulse1(thresholdGate(directionalSpeedFront,-1,1)))
