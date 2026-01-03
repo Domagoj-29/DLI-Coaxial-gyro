@@ -1,3 +1,9 @@
+-- Author: Domagoj29
+-- GitHub: https://github.com/Domagoj-29
+-- Workshop: https://steamcommunity.com/profiles/76561198935577915/myworkshopfiles/
+
+-- onTick functions
+
 local function createCapacitor()
 	local oldCharge=false
 	local chargeCounter=0
@@ -105,49 +111,50 @@ local function len(x,y)
 	return math.sqrt(x*x+y*y)
 end
 
-autopilotPitchPID=createPID()
-altDifferencePID=createPID()
-altHoldPID=createPID()
+local autopilotPitchPID=createPID()
+local altDifferencePID=createPID()
+local altHoldPID=createPID()
 
-posHoldPitchPulse1=createPulse()
-posHoldPitchPulse2=createPulse()
-posHoldRollPulse1=createPulse()
-posHoldRollPulse2=createPulse()
+local posHoldPitchPulse1=createPulse()
+local posHoldPitchPulse2=createPulse()
+local posHoldRollPulse1=createPulse()
+local posHoldRollPulse2=createPulse()
 
-pitchSRlatch=createSRlatch()
-rollSRlatch=createSRlatch()
+local pitchSRlatch=createSRlatch()
+local rollSRlatch=createSRlatch()
 
-capacitor=createCapacitor()
+local capacitor=createCapacitor()
 
-posHoldPitchPID=createPID()
-posHoldRollPID=createPID()
-
-
-pitchPID=createPID()
-rollPID=createPID()
-yawPID=createPID()
-collectivePID=originalPID()
-
-deltaAltitude=createDelta()
+local posHoldPitchPID=createPID()
+local posHoldRollPID=createPID()
 
 
-local liftMaxSpeed=0.12+property.getNumber("Lift max speed")*0.02
-local pitchMaxTilt=0.1+property.getNumber("Pitch max tilt")*0.015
-local pitchTrim=property.getNumber("Pitch trim")*0.02
-local rollMaxTilt=0.08+property.getNumber("Roll max tilt")*0.015
+local pitchPID=createPID()
+local rollPID=createPID()
+local yawPID=createPID()
+local collectivePID=originalPID()
 
-local yawMaxSpeed=0.14+property.getNumber("Yaw max speed")*0.12
-local yawTurnByRoll=property.getNumber("Yaw turn by roll")
-local posHoldMaxTilt=property.getNumber("Position hold max tilt")
-local autopilotDeceleration=property.getNumber("Autopilot deceleration")
+local deltaAltitude=createDelta()
 
-local liftPIDSensitivity=property.getNumber("Lift PID sensitivity")
-local pitchPIDSensitivity=property.getNumber("Pitch PID sensitivity")
-local rollPIDSensitivity=property.getNumber("Roll PID sensitivity")
-local yawPIDSensitivity=property.getNumber("Yaw PID sensitivity")
+pgN=property.getNumber
 
-local autopilotPitch=0
-local stabilizedAltHold=0
+LiftMaxSpeed=0.12+pgN("Lift max speed")*0.02
+PitchMaxTilt=0.1+pgN("Pitch max tilt")*0.015
+PitchTrim=pgN("Pitch trim")*0.02
+RollMaxTilt=0.08+pgN("Roll max tilt")*0.015
+
+YawMaxSpeed=0.14+pgN("Yaw max speed")*0.12
+YawTurnByRoll=pgN("Yaw turn by roll")
+PosHoldMaxTilt=pgN("Position hold max tilt")
+AutopilotDeceleration=pgN("Autopilot deceleration")
+
+LiftPIDSensitivity=pgN("Lift PID sensitivity")
+PitchPIDSensitivity=pgN("Pitch PID sensitivity")
+RollPIDSensitivity=pgN("Roll PID sensitivity")
+YawPIDSensitivity=pgN("Yaw PID sensitivity")
+
+AutopilotPitch=0
+StabilizedAltHold=0
 function onTick()
 	local gpsX=input.getNumber(1)
 	local altitude=input.getNumber(2)
@@ -181,7 +188,7 @@ function onTick()
 
 	local autopilotYaw=3*((compass+math.atan((gpsX-waypointX),(gpsY-waypointY))/(math.pi*2)+1)%1-0.5)
 	local distance=len((gpsX-waypointX),(gpsY-waypointY))
-	local autopilotPitchPIDSetpoint=math.min((distance-100)/(500+autopilotDeceleration*100),1)
+	local autopilotPitchPIDSetpoint=math.min((distance-100)/(500+AutopilotDeceleration*100),1)
 
 	if not (thresholdGate(autopilotYaw,-0.2,0.2) and distance>100) then
 		autopilotPitchPIDSetpoint=0
@@ -190,13 +197,13 @@ function onTick()
 		end
 	end
 
-	autopilotPitch=autopilotPitchPID(autopilotPitchPIDSetpoint,autopilotPitch,0,0.01,0,distance>100)
+	AutopilotPitch=autopilotPitchPID(autopilotPitchPIDSetpoint,AutopilotPitch,0,0.01,0,distance>100)
 
 	-- Altitude hold
 	local altitudeDifference=altDifferencePID(altHoldAltitude,altitude,0.005,0,0,altHoldEnabled)
 
-	stabilizedAltHold=altHoldPID(altitudeDifference,stabilizedAltHold,0,0.02,0,altHoldEnabled)
-	local outputAltHold=clamp(stabilizedAltHold,-liftMaxSpeed,liftMaxSpeed)
+	StabilizedAltHold=altHoldPID(altitudeDifference,StabilizedAltHold,0,0.02,0,altHoldEnabled)
+	local outputAltHold=clamp(StabilizedAltHold,-LiftMaxSpeed,LiftMaxSpeed)
 
 	-- Position hold
 	local controlsNearZero=thresholdGate(yawLR,-0.1,0.1) and thresholdGate(pitchWS,-0.1,0.1) and thresholdGate(rollAD,-0.1,0.1) and collectiveUD<0.1
@@ -212,33 +219,33 @@ function onTick()
 	local posHoldPitch=posHoldPitchPID(0,directionalSpeedFront,0.005,0.0001,0,posHoldPitchPIDActive)
 	local posHoldRoll=posHoldRollPID(0,directionalSpeedRight,0.005,0.0001,0,posHoldRollPIDActive)
 
-	posHoldPitch=clamp(posHoldPitch,-posHoldMaxTilt*0.01,posHoldMaxTilt*0.01)
-	posHoldRoll=clamp(posHoldRoll,-posHoldMaxTilt*0.01,posHoldMaxTilt*0.01)
+	posHoldPitch=clamp(posHoldPitch,-PosHoldMaxTilt*0.01,PosHoldMaxTilt*0.01)
+	posHoldRoll=clamp(posHoldRoll,-PosHoldMaxTilt*0.01,PosHoldMaxTilt*0.01)
 
 	-- Pitch control
-	local pitchControl=(autopilotEnabled) and autopilotPitch or pitchWS
+	local pitchControl=(autopilotEnabled) and AutopilotPitch or pitchWS
 
-	local pitchPIDSetpoint=pitchControl*pitchMaxTilt*math.sqrt(1-math.abs(rollAD)/2)
-	local stabilizedPitch=pitchPID(pitchPIDSetpoint,tiltFront,pitchPIDSensitivity+3,0,80,true)
+	local pitchPIDSetpoint=pitchControl*PitchMaxTilt*math.sqrt(1-math.abs(rollAD)/2)
+	local stabilizedPitch=pitchPID(pitchPIDSetpoint,tiltFront,PitchPIDSensitivity+3,0,80,true)
 
-	local outputPitch=posHoldPitch+stabilizedPitch+(pitchTrim*0.02)
+	local outputPitch=posHoldPitch+stabilizedPitch+(PitchTrim*0.02)
 	-- Roll control
 	local rollControl=(autopilotEnabled) and 0 or rollAD
 
-	local rollPIDSetpoint=rollControl*rollMaxTilt*math.sqrt(1-math.abs(pitchWS)/2)
-	local stabilizedRoll=rollPID(rollPIDSetpoint,tiltRight,rollPIDSensitivity*0.5+2,0,40,true)
+	local rollPIDSetpoint=rollControl*RollMaxTilt*math.sqrt(1-math.abs(pitchWS)/2)
+	local stabilizedRoll=rollPID(rollPIDSetpoint,tiltRight,RollPIDSensitivity*0.5+2,0,40,true)
 
 	local outputClockwiseRoll=posHoldRoll+stabilizedRoll
 	local outputCounterClockwiseRoll=-(posHoldRoll+stabilizedRoll)
 	-- Yaw control
 	local yawControl=(autopilotEnabled) and autopilotYaw or yawLR
 
-	local yawPIDSetpoint=yawMaxSpeed*clamp((yawControl+pitchWS*rollAD*yawTurnByRoll),-1,1)
-	local stabilizedYaw=yawPID(yawPIDSetpoint,angularSpeedUp,yawPIDSensitivity+5,0,0,true)
+	local yawPIDSetpoint=YawMaxSpeed*clamp((yawControl+pitchWS*rollAD*YawTurnByRoll),-1,1)
+	local stabilizedYaw=yawPID(yawPIDSetpoint,angularSpeedUp,YawPIDSensitivity+5,0,0,true)
 	-- Collective control
-	local collectivePIDSetpoint=(altHoldEnabled) and outputAltHold or collectiveUD*liftMaxSpeed
+	local collectivePIDSetpoint=(altHoldEnabled) and outputAltHold or collectiveUD*LiftMaxSpeed
 
-	local stabilizedCollective=collectivePID(collectivePIDSetpoint,deltaAltitude(altitude),6+liftPIDSensitivity,0.2+liftPIDSensitivity*0.04,10+2*liftPIDSensitivity)
+	local stabilizedCollective=collectivePID(collectivePIDSetpoint,deltaAltitude(altitude),6+LiftPIDSensitivity,0.2+LiftPIDSensitivity*0.04,10+2*LiftPIDSensitivity)
 
 	local outputClockwiseCollective=stabilizedCollective-stabilizedYaw
 	local outputCounterClockwiseCollective=stabilizedCollective+stabilizedYaw
